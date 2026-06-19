@@ -1,0 +1,14 @@
+node_modules/
+.next/
+__pycache__/
+*.pyc
+*.db
+.env
+*.pkl
+venv/
+.venv/
+dist/
+build/
+.DS_Store
+*.log
+.opencode/

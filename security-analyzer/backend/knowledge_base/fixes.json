@@ -1,0 +1,219 @@
+{
+  "missing_spf": {
+    "summary": "Add an SPF (Sender Policy Framework) DNS record to authorize which servers can send email from your domain",
+    "steps": [
+      "Log into your DNS provider (Cloudflare, GoDaddy, Namecheap, Route53, etc.)",
+      "Navigate to DNS settings for your domain",
+      "Add a new TXT record",
+      "Name/Host: @ (or your domain name)",
+      "Value: v=spf1 include:_spf.google.com ~all (adjust for your email provider)",
+      "For Microsoft 365: v=spf1 include:spf.protection.outlook.com -all",
+      "For custom: v=spf1 ip4:YOUR_SERVER_IP -all",
+      "TTL: 3600 (1 hour) or default",
+      "Save the record and wait 24-48 hours for propagation",
+      "Verify: nslookup -type=txt yourdomain.com or use our re-scan tool"
+    ],
+    "code_snippets": [
+      {
+        "language": "dns",
+        "label": "Standard SPF for Google Workspace",
+        "code": "v=spf1 include:_spf.google.com ~all"
+      },
+      {
+        "language": "dns",
+        "label": "Hard Fail (Recommended)",
+        "code": "v=spf1 include:_spf.google.com -all"
+      },
+      {
+        "language": "dns",
+        "label": "Microsoft 365",
+        "code": "v=spf1 include:spf.protection.outlook.com -all"
+      }
+    ],
+    "estimated_time": "15 minutes",
+    "difficulty": "easy",
+    "resources": [
+      "https://dnschecker.org",
+      "https://www.spftool.net"
+    ]
+  },
+  "missing_dkim": {
+    "summary": "Generate and add a DKIM key to authenticate your outgoing email",
+    "steps": [
+      "Log into your email provider's admin console",
+      "Navigate to security / authentication settings",
+      "Generate a new DKIM key (usually 2048-bit recommended)",
+      "Copy the generated DNS record",
+      "Go to your DNS provider and add the TXT record",
+      "Name/Host: default._domainkey (or as provided)",
+      "Paste the DKIM value",
+      "Enable DKIM signing in your email provider settings",
+      "Verify with our re-scan tool"
+    ],
+    "code_snippets": [],
+    "estimated_time": "20 minutes",
+    "difficulty": "medium",
+    "resources": [
+      "https://www.dmarcanalyzer.com/dkim/"
+    ]
+  },
+  "missing_dmarc": {
+    "summary": "Add a DMARC policy to control how receivers handle unauthenticated email",
+    "steps": [
+      "Go to your DNS provider's settings",
+      "Add a new TXT record",
+      "Name/Host: _dmarc",
+      "Value: v=DMARC1; p=reject; rua=mailto:security@yourdomain.com; pct=100",
+      "Start with p=none (monitoring) → p=quarantine → p=reject over 2-4 weeks",
+      "Set rua to receive daily XML reports on email authentication",
+      "TTL: 3600 or default",
+      "Save and wait for propagation"
+    ],
+    "code_snippets": [
+      {
+        "language": "dns",
+        "label": "Reject (Maximum Protection)",
+        "code": "v=DMARC1; p=reject; rua=mailto:dmarc-reports@yourdomain.com; pct=100"
+      },
+      {
+        "language": "dns",
+        "label": "Monitoring Only (Start Here)",
+        "code": "v=DMARC1; p=none; rua=mailto:dmarc-reports@yourdomain.com"
+      },
+      {
+        "language": "dns",
+        "label": "Quarantine (Transition)",
+        "code": "v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@yourdomain.com; pct=50"
+      }
+    ],
+    "estimated_time": "15 minutes",
+    "difficulty": "easy",
+    "resources": [
+      "https://dmarcguide.com",
+      "https://www.dmarcanalyzer.com"
+    ]
+  },
+  "no_hsts": {
+    "summary": "Add HTTP Strict-Transport-Security header to force HTTPS connections",
+    "steps": [
+      "Edit your web server configuration (Nginx, Apache, etc.)",
+      "Add the HSTS header with a 1-year max-age",
+      "Test with a short max-age first (e.g., 300 seconds)",
+      "Once confirmed, increase to 31536000 (1 year)",
+      "Include preload directive if submitting to browser preload lists"
+    ],
+    "code_snippets": [
+      {
+        "language": "nginx",
+        "label": "Nginx Configuration",
+        "code": "add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains; preload\" always;"
+      },
+      {
+        "language": "apache",
+        "label": "Apache .htaccess",
+        "code": "Header always set Strict-Transport-Security \"max-age=31536000; includeSubDomains; preload\""
+      },
+      {
+        "language": "cloudflare",
+        "label": "Cloudflare",
+        "code": "Enable \"Always Use HTTPS\" and \"Automatic HTTPS Rewrites\" in SSL/TLS > Edge Certificates"
+      }
+    ],
+    "estimated_time": "10 minutes",
+    "difficulty": "easy",
+    "resources": [
+      "https://hstspreload.org"
+    ]
+  },
+  "no_csp": {
+    "summary": "Implement Content Security Policy to prevent XSS and data injection attacks",
+    "steps": [
+      "Start with report-only mode: Content-Security-Policy-Report-Only",
+      "Check your site for inline scripts and external resources",
+      "Build a CSP policy that whitelists your trusted sources",
+      "Switch to enforcement: Content-Security-Policy header",
+      "Monitor reports and adjust as needed"
+    ],
+    "code_snippets": [
+      {
+        "language": "nginx",
+        "label": "Nginx - Basic CSP",
+        "code": "add_header Content-Security-Policy \"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';\" always;"
+      },
+      {
+        "language": "apache",
+        "label": "Apache - Report-Only (Testing)",
+        "code": "Header always set Content-Security-Policy-Report-Only \"default-src 'self'; report-uri /csp-reports;\""
+      }
+    ],
+    "estimated_time": "30 minutes",
+    "difficulty": "medium",
+    "resources": [
+      "https://csp-evaluator.withgoogle.com"
+    ]
+  },
+  "weak_ssl": {
+    "summary": "Upgrade SSL/TLS configuration to use modern, secure ciphers",
+    "steps": [
+      "Check your current SSL config with SSL Labs or testssl.sh",
+      "Disable TLS 1.0 and TLS 1.1 (keep TLS 1.2 and 1.3)",
+      "Disable weak ciphers (RC4, 3DES, CBC-mode ciphers)",
+      "Enable only AEAD ciphers (AES-GCM, ChaCha20-Poly1305)",
+      "Restart your web server and re-test"
+    ],
+    "code_snippets": [
+      {
+        "language": "nginx",
+        "label": "Nginx - Modern SSL Config",
+        "code": "ssl_protocols TLSv1.2 TLSv1.3;\nssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;\nssl_prefer_server_ciphers off;"
+      }
+    ],
+    "estimated_time": "20 minutes",
+    "difficulty": "medium",
+    "resources": [
+      "https://sslconfig.com",
+      "https://www.ssllabs.com/ssltest/"
+    ]
+  },
+  "missing_x_frame_options": {
+    "summary": "Add X-Frame-Options header to prevent clickjacking",
+    "steps": [
+      "Add the header to prevent your site from being embedded in iframes",
+      "Use DENY if your site should never be framed",
+      "Use SAMEORIGIN if you need to frame your own content"
+    ],
+    "code_snippets": [
+      {
+        "language": "nginx",
+        "label": "Nginx",
+        "code": "add_header X-Frame-Options \"SAMEORIGIN\" always;"
+      },
+      {
+        "language": "apache",
+        "label": "Apache",
+        "code": "Header always set X-Frame-Options \"SAMEORIGIN\""
+      }
+    ],
+    "estimated_time": "5 minutes",
+    "difficulty": "easy",
+    "resources": []
+  },
+  "generic": {
+    "summary": "General security hardening steps",
+    "steps": [
+      "Keep all software and systems up to date",
+      "Enable logging and monitoring for suspicious activity",
+      "Implement principle of least privilege for all accounts",
+      "Use multi-factor authentication everywhere",
+      "Conduct regular security audits and penetration tests",
+      "Have an incident response plan ready"
+    ],
+    "code_snippets": [],
+    "estimated_time": "Varies",
+    "difficulty": "varies",
+    "resources": [
+      "https://owasp.org",
+      "https://www.cisa.gov/cybersecurity"
+    ]
+  }
+}
